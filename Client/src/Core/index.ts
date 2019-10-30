@@ -22,6 +22,9 @@ import * as FilterParamUtils from 'wdk-client/Views/Question/Params/FilterParamN
 import * as WdkMiddleware from 'wdk-client/Core/WdkMiddleware';
 import * as SearchUtils from 'wdk-client/Utils/SearchUtils';
 import * as StepAnalysisResults from 'wdk-client/Core/MoveAfterRefactor/Components/StepAnalysis/Utils/StepAnalysisResults';
+import * as StepAnalysisResultsPane from 'wdk-client/Core/MoveAfterRefactor/Components/StepAnalysis/StepAnalysisResultsPane';
+import * as StepAnalysisWordCloudModal from 'wdk-client/Core/MoveAfterRefactor/Components/StepAnalysis/StepAnalysisWordCloudModal';
+import * as StepAnalysisEnrichmentResultTable from 'wdk-client/Core/MoveAfterRefactor/Components/StepAnalysis/StepAnalysisEnrichmentResultTable';
 
 declare global {
   interface Window {
@@ -50,6 +53,9 @@ export {
   ReporterUtils,
   SearchUtils,
   StepAnalysisResults,
+  StepAnalysisResultsPane,
+  StepAnalysisWordCloudModal,
+  StepAnalysisEnrichmentResultTable,
   StoreModules,
   TreeUtils,
   WdkModel,
