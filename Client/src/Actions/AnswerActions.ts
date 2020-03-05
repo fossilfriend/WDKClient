@@ -5,7 +5,8 @@ import {
   RecordClass,
   Question,
   Answer,
-  ParameterValues
+  ParameterValues,
+  AnswerSpec
 } from "wdk-client/Utils/WdkModel";
 
 
@@ -27,9 +28,7 @@ export type Sorting = {
 
 export type AnswerOptions = {
   parameters?: ParameterValues;
-  filters?: {name: string, value: any}[]
-  viewFilters?: {name: string, value: any[]}
-  displayInfo: DisplayInfo
+  displayInfo: DisplayInfo;
 }
 
 
@@ -38,7 +37,6 @@ export type AnswerOptions = {
 
 export type Action =
   | ChangeColumnPositionAction
-  | ChangeFilterAction
   | ChangeSortingAction
   | ChangeVisibleColumnsAction
   | EndLoadingWithAnswerAction
@@ -159,26 +157,6 @@ export function changeVisibleColumns(attributes: AttributeField[]): ChangeVisibl
 
 //==============================================================================
 
-export const CHANGE_FILTER = 'answer/change-filter';
-
-export interface ChangeFilterAction {
-  type: typeof CHANGE_FILTER;
-  payload: {
-    terms: string;
-    attributes: string[];
-    tables: string[];
-  };
-}
-
-export function changeFilter(terms: string, attributes: string[], tables: string[]): ChangeFilterAction {
-  return {
-    type: CHANGE_FILTER,
-    payload: { terms, attributes, tables }
-  }
-}
-
-//==============================================================================
-
 
 // Thunks
 // ------
@@ -195,8 +173,7 @@ type LoadAction =
  * Request data format, POSTed to service:
  *
  *     {
- *       "answerSpec": {
- *         "questionName": String,
+ *       "searchConfig": {
  *         "parameters": Object (map of paramName -> paramValue),
  *         "filters": [ {
  *           “name": String, value: Any
@@ -205,12 +182,10 @@ type LoadAction =
  *           “name": String, value: Any
  *         } ]
  *       },
- *       formatting: {
- *         formatConfig: {
- *           pagination: { offset: Number, numRecords: Number },
- *           attributes: [ attributeName: String ],
- *           sorting: [ { attributeName: String, direction: Enum[ASC,DESC] } ]
- *         }
+ *       reporterConfig: {
+ *         pagination: { offset: Number, numRecords: Number },
+ *         attributes: [ attributeName: String ],
+ *         sorting: [ { attributeName: String, direction: Enum[ASC,DESC] } ]
  *       }
  *     }
  *
@@ -232,45 +207,45 @@ export function loadAnswer(
   opts: AnswerOptions
 ): ActionThunk<LoadAction> {
   return function run({ wdkService }) {
-    let { parameters = {} as ParameterValues, filters = [], displayInfo } = opts;
-
-    // FIXME Set attributes to whatever we're sorting on. This is required by
-    // the service, but it doesn't appear to have any effect at this time. We
-    // should be passing the attribute in based on info from the RecordClass.
-    displayInfo.attributes = "__ALL_ATTRIBUTES__"; // special string for default attributes
-    displayInfo.tables = [];
-
-    let questionPromise = wdkService.findQuestion(hasUrlSegment(questionUrlSegment));
-    let recordClassPromise = wdkService.findRecordClass(hasUrlSegment(recordClassUrlSegment));
-    let answerPromise = questionPromise.then(question => {
-
-      if (question == null)
-        throw new Error("Could not find a question identified by `" + questionUrlSegment + "`.");
-
-      // Build XHR request data for '/answer'
-      let answerSpec = {
-        questionName: question.name,
-        parameters,
-        filters
-      };
-      let formatConfig = pick(displayInfo, ['attributes', 'pagination', 'sorting']);
-      return wdkService.getAnswerJson(answerSpec, formatConfig);
-    });
-
     return [
       startLoading(),
-      Promise.all([answerPromise, questionPromise, recordClassPromise])
-      .then(
-        ([answer, question, recordClass]) => endLoadingWithAnswer({
-          answer,
-          question,
-          recordClass,
-          displayInfo,
-          parameters
-        }),
-        error => endLoadingWithError(error)
-      )
-    ];
+      async () => {
+        try {
+          const { parameters = {} as ParameterValues, displayInfo } = opts;
+          const question = await wdkService.findQuestion(hasUrlSegment(questionUrlSegment));
+          const recordClass = await wdkService.findRecordClass(hasUrlSegment(recordClassUrlSegment));
+          const attributes = recordClass.attributes
+          // Get all attributes for applications that need internal attributes for rendering purposes.
+          // TODO Figure out a way to allow applications to declore additional non-displayable attributes for request
+          // .filter(attr => attr.isDisplayable)
+            .map(attr => attr.name);
+
+          displayInfo.attributes = attributes;
+          displayInfo.tables = [];
+
+          // Build XHR request data for '/answer'
+          const answerSpec: AnswerSpec = {
+            searchName: question.urlSegment,
+            searchConfig: {
+              parameters
+            }
+          };
+          const formatConfig = pick(displayInfo, ['attributes', 'pagination', 'sorting']);
+          const answer = await wdkService.getAnswerJson(answerSpec, formatConfig);
+
+          return endLoadingWithAnswer({
+            answer,
+            question,
+            recordClass,
+            displayInfo,
+            parameters
+          });
+        }
+        catch(error) {
+          return endLoadingWithError(error)
+        }
+      }
+    ]
   }
 }
 

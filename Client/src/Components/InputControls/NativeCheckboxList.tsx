@@ -1,10 +1,15 @@
-import React, { Component, FormEvent, MouseEvent } from 'react';
+import React, { Component, FormEvent, MouseEvent, ReactNode } from 'react';
 import {uniqueId, noop} from 'lodash';
-import { wrappable } from 'wdk-client/Utils/ComponentUtils';
+import { LinksPosition } from 'wdk-client/Components/CheckboxTree/CheckboxTree';
+import { wrappable, makeClassNameHelper } from 'wdk-client/Utils/ComponentUtils';
+
+import './wdk-CheckboxList.scss';
+
+const cx = makeClassNameHelper('wdk-CheckboxList');
 
 type Item = {
-  value: any
-  display: string
+  value: string
+  display: ReactNode
 }
 
 type Props = {
@@ -19,7 +24,7 @@ type Props = {
    * Default list of selected items. If provided, these items will be checked
    * for the initial render.
    */
-  defaultSelectedItems?: Item[]
+  defaultSelectedItems?: string[]
 
   /**
    * List of selected items.
@@ -28,10 +33,10 @@ type Props = {
    *
    * - If provided, items in this list will be checked, regardless of the value
    *   of `defaultSelectedItems`. Also, state will not be tracked locally.
-   *   `onChange` should be used to detect changes and update extrernally
+   *   `onChange` should be used to detect changes and update externally
    *   tracked state.
    */
-  selectedItems: Item[]
+  selectedItems?: string[]
 
   /**
    * Callback function that will be called when the set of selected items
@@ -55,10 +60,12 @@ type Props = {
    * If state is managed locall, all items will be unchecked.
    */
   onClearAll?: (event: MouseEvent<HTMLButtonElement>) => void
+
+  linksPosition?: LinksPosition;
 }
 
 type State = {
-  selectedItems: Item[]
+  selectedItems: string[]
 }
 
 /**
@@ -73,10 +80,11 @@ class NativeCheckboxList extends Component<Props, State> {
   controlled = this.props.selectedItems != null
 
   static defaultProps = {
-    defaultSelectedItems: [] as Item[],
+    defaultSelectedItems: [] as string[],
     onChange: (event: FormEvent<HTMLInputElement>, item: Item) => {},
     onSelectAll: (event: MouseEvent<HTMLButtonElement>) => {},
-    onClearAll: (event: MouseEvent<HTMLButtonElement>) => {}
+    onClearAll: (event: MouseEvent<HTMLButtonElement>) => {},
+    linksPosition: LinksPosition.Bottom
   } as Props
 
   constructor(props: Props) {
@@ -96,7 +104,7 @@ class NativeCheckboxList extends Component<Props, State> {
       this.setState({
         selectedItems: event.currentTarget.checked
           ? this.state.selectedItems.concat(item.value)
-          : this.state.selectedItems.filter(i => i.value !== item.value)
+          : this.state.selectedItems.filter(i => i !== item.value)
       });
     }
   }
@@ -128,14 +136,24 @@ class NativeCheckboxList extends Component<Props, State> {
   }
 
   render() {
-    let { selectedItems } = this.controlled ? this.props : this.state;
+    let { selectedItems: storedSelectedItems } = this.controlled ? this.props : this.state;
+    let selectedItems = storedSelectedItems || [];
+    let { linksPosition = LinksPosition.Bottom } = this.props;
+    let links = (
+      <div className={cx('Links')}>
+        <button type="button" className="wdk-Link" onClick={e => this.selectAll(e)}>select all</button>
+        {' | '}
+        <button type="button" className="wdk-Link" onClick={e => this.clearAll(e)}>clear all</button>
+      </div>
+    );
     return (
-      <div className="wdk-CheckboxList">
+      <div className={cx()}>
+        {linksPosition & LinksPosition.Top ? links : null}
         <div>
-          {this.props.items.map(item => {
+          {this.props.items.map((item, index) => {
             let id = `${this.id}.${item.value}`;
             return (
-              <div key={item.value} className="wdk-CheckboxListItem">
+              <div key={item.value} className={cx('Item')}>
                 <label>
                   <input
                     id={id}
@@ -145,20 +163,16 @@ class NativeCheckboxList extends Component<Props, State> {
                     checked={selectedItems.includes(item.value)}
                     onChange={e => this.toggle(e, item)}
                   />
-                  {' ' + item.display}
+                  {' '}{item.display}
                 </label>
               </div>
             );
           })}
         </div>
-        <div style={{ marginTop: '.5em' }}>
-          <button type="button" className="wdk-Link" onClick={e => this.selectAll(e)}>select all</button>
-          {' | '}
-          <button type="button" className="wdk-Link" onClick={e => this.clearAll(e)}>clear all</button>
-        </div>
+        {linksPosition & LinksPosition.Bottom ? links : null}
       </div>
     );
   }
 }
 
-export default wrappable(NativeCheckboxList)
+export default Object.assign(wrappable(NativeCheckboxList), { LinksPosition });

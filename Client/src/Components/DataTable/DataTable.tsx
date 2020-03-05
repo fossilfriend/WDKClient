@@ -1,9 +1,9 @@
 import $ from 'jquery';
 import RealTimeSearchBox from 'wdk-client/Components/SearchBox/RealTimeSearchBox';
-import { eq, once, uniqueId, assign } from 'lodash';
+import { eq, once, uniqueId, uniqBy, assign } from 'lodash';
 import React, { Component, PureComponent, ReactElement } from 'react';
 
-import { unmountComponentAtNode, unstable_renderSubtreeIntoContainer } from 'react-dom';
+import { createPortal } from 'react-dom';
 import { formatAttributeValue, lazy, wrappable } from 'wdk-client/Utils/ComponentUtils';
 import { containsAncestorNode } from 'wdk-client/Utils/DomUtils';
 import 'wdk-client/Components/DataTable/DataTable.css';
@@ -111,12 +111,16 @@ type Props = {
   getRowId: (row: Row) => number;
 }
 
+interface State {
+  childRows: [ HTMLElement, ChildRowProps ][];
+}
+
 /**
  * Sortable table for WDK-formatted data.
  *
  * This uses DataTables jQuery plugin
  */
-class DataTable extends PureComponent<Props> {
+class DataTable extends PureComponent<Props, State> {
 
   /** Default DataTables jQuery plugin options. */
   static defaultDataTableOpts = {
@@ -133,6 +137,10 @@ class DataTable extends PureComponent<Props> {
     }
   };
 
+  state: State = {
+    childRows: []
+  }
+
   _childRowContainers: Map<HTMLTableRowElement, HTMLElement> = new Map();
 
   _isRedrawing: boolean = false;
@@ -146,7 +154,7 @@ class DataTable extends PureComponent<Props> {
   columns: DataTables.ColumnSettings[] = [];
 
   componentDidMount() {
-    this._childRowContainers = new Map();
+    // this._childRowContainers = new Map();
     this._setup();
   }
 
@@ -155,7 +163,6 @@ class DataTable extends PureComponent<Props> {
 
     let columnsChanged = didPropChange(this, prevProps, 'columns')
     let dataChanged = didPropChange(this, prevProps, 'data');
-    let childRowChanged = didPropChange(this, prevProps, 'childRow');
     let sortingChanged = didPropChange(this, prevProps, 'sorting') &&
       !eq(this.props.sorting, prevProps.sorting);
     let widthChanged = didPropChange(this, prevProps, 'width');
@@ -171,11 +178,6 @@ class DataTable extends PureComponent<Props> {
 
     else {
       let needsRedraw = false;
-
-      if (childRowChanged) {
-        this._rerenderChildRows(this._dataTable);
-        needsRedraw = true;
-      }
 
       if (sortingChanged) {
         this._updateSorting(this._dataTable);
@@ -304,59 +306,53 @@ class DataTable extends PureComponent<Props> {
           return;
         }
 
-        // ignore event if text has been selected
-        const selection = window.getSelection();
-        const selectionText = selection.toString();
-        if (
-          selectionText &&
-          containsAncestorNode(
-            selection.anchorNode,
-            currNode => currNode.parentNode === tr
-          )) {
-          return;
-        }
+      // ignore event if text has been selected
+      const selection = window.getSelection();
+      if (
+        selection &&
+        selection.toString() &&
+        containsAncestorNode(
+          selection.anchorNode,
+          currNode => currNode.parentNode === tr
+        )) {
+        return;
+      }
 
-        let row = dataTable.row(tr);
-        if (row.child.isShown()) {
-          this._hideChildRow(dataTable, row.node() as HTMLTableRowElement);
-        }
-        else {
-          this._renderChildRow(dataTable, row.node() as HTMLTableRowElement);
-        }
-        this._updateChildRowClassNames(dataTable);
-        this._callExpandedRowsCallback(dataTable);
-      })
-      // click handler for expand all rows
-      .on('click', 'th .wdk-DataTableCellExpand', event => {
-        // if all are shown, then hide all, otherwise show any that are hidden
-        let allShown = areAllChildRowsShown(dataTable);
-        let update = allShown ? this._hideChildRow : this._renderChildRow;
-        for (let tr of dataTable.rows().nodes().toArray()) {
-          update.call(this, tr);
-        }
-        this._updateChildRowClassNames(dataTable);
-        this._callExpandedRowsCallback(dataTable);
-      })
-      .on('order.dt', () => {
-        if (this._isRedrawing || !this.props.onSortingChange || !this._dataTable) return;
+      let row = dataTable.row(tr);
+      if (row.child.isShown()) {
+        this._hideChildRow(dataTable, row.node() as HTMLTableRowElement);
+      }
+      else {
+        this._renderChildRow(dataTable, row.node() as HTMLTableRowElement);
+      }
+      this._updateChildRowClassNames(dataTable);
+      this._callExpandedRowsCallback(dataTable);
+    })
+    // click handler for expand all rows
+    .on('click', 'th .wdk-DataTableCellExpand', () => {
+      // if all are shown, then hide all, otherwise show any that are hidden
+      let allShown = areAllChildRowsShown(dataTable);
+      for (let tr of dataTable.rows().nodes().toArray()) {
+        if (allShown) this._hideChildRow(dataTable, tr);
+        else this._renderChildRow(dataTable, tr);
+      }
+      this._updateChildRowClassNames(dataTable);
+      this._callExpandedRowsCallback(dataTable);
+    })
+    .on('order.dt', () => {
+      if (this._isRedrawing || !this.props.onSortingChange || !this._dataTable) return;
 
-        let sorting = this._dataTable.order().map(entry => ({
-          name: columns[entry[0] as number].data as string,
-          direction: (entry[1] as string).toUpperCase() as 'ASC' | 'DESC'
-        }));
-        this.props.onSortingChange(sorting);
-      })
-      .DataTable(tableOpts);
+      let sorting = this._dataTable.order().map(entry => ({
+        name: columns[entry[0] as number].data as string,
+        direction: (entry[1] as string).toUpperCase() as 'ASC' | 'DESC'
+      }));
+      this.props.onSortingChange(sorting);
+    })
+    .DataTable(tableOpts);
 
     if (childRow != null) {
-      this._updateExpandedRows(dataTable);
       this._dataTable.draw();
-    }
-  }
-
-  _rerenderChildRows(dataTable: DataTables.Api) {
-    for (let tableRowNode of this._childRowContainers.keys()) {
-      this._renderChildRow(dataTable, tableRowNode, false);
+      this._updateExpandedRows(dataTable);
     }
   }
 
@@ -408,16 +404,18 @@ class DataTable extends PureComponent<Props> {
     let row = dataTable.row(tableRowNode);
     let childRowContainer = this._getChildRowContainer(tableRowNode);
     if (row.child() == null) row.child(childRowContainer);
+    if (openRow && !row.child.isShown()) {
+      row.child.show();
+      tableRowNode.setAttribute('aria-expanded', 'true');
+    }
     if (typeof childRow === 'string') {
       childRowContainer.innerHTML = childRow;
     }
     else {
       let props = { rowIndex: row.index(), rowData: row.data() };
-      unstable_renderSubtreeIntoContainer(this, React.createElement(childRow, props), childRowContainer);
-    }
-    if (openRow && !row.child.isShown()) {
-      row.child.show();
-      tableRowNode.setAttribute('aria-expanded', 'true');
+      this.setState(state => ({
+        childRows: uniqBy([ ...state.childRows, [ childRowContainer, props ] ], ([node]) => node)
+      }));
     }
   }
 
@@ -457,14 +455,11 @@ class DataTable extends PureComponent<Props> {
   /** Unmount all child row components and destroy the datatable instance */
   _destroy(dataTable: DataTables.Api) {
     dataTable.destroy(true);
-    for (let container of this._childRowContainers.values()) {
-      unmountComponentAtNode(container);
-    }
     this._childRowContainers.clear();
   }
 
   render() {
-    let { searchable = true } = this.props;
+    let { searchable = true, childRow } = this.props;
     return (
       <div className="MesaComponent">
         {searchable && (
@@ -479,7 +474,9 @@ class DataTable extends PureComponent<Props> {
             delayMs={0}
           />
         )}
-        <div ref={node => this.node = node} className="wdk-DataTableContainer" />
+        <div ref={node => this.node = node} className="wdk-DataTableContainer"/>
+        {this.state.childRows.map(([ node, childRowProps ]) =>
+          childRow && createPortal(React.createElement(childRow, childRowProps), node))}
       </div>
     );
   }

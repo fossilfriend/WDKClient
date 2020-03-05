@@ -2,6 +2,7 @@ import { memoize, uniq } from 'lodash';
 import PropTypes from 'prop-types';
 import React, {useLayoutEffect, useRef} from 'react';
 import ReactDOM from 'react-dom';
+import { scrollIntoViewIfNeeded } from 'wdk-client/Utils/DomUtils';
 import { Seq } from 'wdk-client/Utils/IterableUtils';
 import { preorderSeq } from 'wdk-client/Utils/TreeUtils';
 import CheckboxTree from 'wdk-client/Components/CheckboxTree/CheckboxTree';
@@ -120,7 +121,12 @@ export default class FieldList extends React.Component { // eslint-disable-line 
           onSearchTermChange={this.handleSearchTermChange}
           searchPredicate={this.searchPredicate}
           renderNode={node => (
-            <FieldNode node={node} isActive={node.field === activeField} handleFieldSelect={this.handleFieldSelect} />
+            <FieldNode
+              node={node}
+              searchTerm={this.state.searchTerm}
+              isActive={node.field === activeField}
+              handleFieldSelect={this.handleFieldSelect}
+            />
           )}
         />
       </div>
@@ -143,12 +149,14 @@ function getNodeSearchString(valuesMap) {
 }
 
 
-function FieldNode({node, isActive, handleFieldSelect }) {
+function FieldNode({node, searchTerm, isActive, handleFieldSelect }) {
   const nodeRef = useRef(null);
 
   useLayoutEffect(() => {
-    if (isActive && nodeRef.current) scrollIntoViewIfNeeded(nodeRef.current);
-  }, [ isActive, nodeRef.current ])
+    if (isActive && nodeRef.current && nodeRef.current.offsetParent) {
+      scrollIntoViewIfNeeded(nodeRef.current.offsetParent);
+    }
+  }, [ isActive, nodeRef.current, searchTerm ])
 
   return (
     <Tooltip content={node.field.description} hideDelay={0}>
@@ -177,17 +185,4 @@ function getIcon(field) {
   return isRange(field) ? 'bar-chart-o'
     : isMulti(field) ? 'th-list'
     : 'list';
-}
-
-function scrollIntoViewIfNeeded(element) {
-  const { offsetParent } = element;
-  if (
-    offsetParent != null &&
-    // below the bottom
-    ((offsetParent.scrollTop > element.offsetTop) ||
-    (offsetParent.clientHeight + offsetParent.scrollTop) <= (element.offsetTop + element.clientHeight))
-    // above the top
-  ) {
-    offsetParent.scrollTop = element.offsetTop - (offsetParent.clientHeight / 2);
-  }
 }

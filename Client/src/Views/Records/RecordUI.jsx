@@ -1,6 +1,6 @@
 import classnames from 'classnames';
 import { debounce, get } from 'lodash';
-import { Component } from 'react';
+import React, { Component } from 'react';
 import { findDOMNode } from 'react-dom';
 import Sticky from 'wdk-client/Components/Display/Sticky';
 import { getId } from 'wdk-client/Utils/CategoryUtils';
@@ -83,9 +83,10 @@ class RecordUI extends Component {
   render() {
     let classNames = classnames(
       'wdk-RecordContainer',
-      'wdk-RecordContainer__' + this.props.recordClass.name,
+      'wdk-RecordContainer__' + this.props.recordClass.fullName,
       {
-        'wdk-RecordContainer__withSidebar': this.props.navigationVisible      }
+        'wdk-RecordContainer__withSidebar': this.props.navigationVisible
+      }
     );
 
     let sidebarIconClass = classnames({
@@ -129,18 +130,19 @@ class RecordUI extends Component {
                 onNavigationVisibilityChange={this.props.updateNavigationVisibility}
                 onNavigationCategoryExpansionChange={this.props.updateNavigationCategoryExpansion}
                 onNavigationQueryChange={this.props.updateNavigationQuery}
+                requestPartialRecord={this.props.requestPartialRecord}
               />
             </div>
           )}
         </Sticky>
         <div className="wdk-RecordMain">
-          <div className="wdk-RecordMainSectionFieldToggles">
+          {/* <div className="wdk-RecordMainSectionFieldToggles">
             <button type="button" title="Expand all content" className="wdk-Link"
               onClick={this.props.updateAllFieldVisibility.bind(null, true)}>Expand All</button>
             {' | '}
             <button type="button" title="Collapse all content" className="wdk-Link"
               onClick={this.props.updateAllFieldVisibility.bind(null, false)}>Collapse All</button>
-          </div>
+          </div> */}
           <RecordMainSection
             ref={c => this.recordMainSectionNode = findDOMNode(c)}
             record={this.props.record}
@@ -148,6 +150,7 @@ class RecordUI extends Component {
             categories={this.props.categoryTree.children}
             collapsedSections={this.props.collapsedSections}
             onSectionToggle={this.props.updateSectionVisibility}
+            requestPartialRecord={this.props.requestPartialRecord}
           />
         </div>
       </div>

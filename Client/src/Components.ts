@@ -54,6 +54,7 @@ import PermissionDenied from 'wdk-client/Components/PageStatus/PermissionDenied'
 import Loading from 'wdk-client/Components/Loading/Loading';
 import LoadingOverlay from 'wdk-client/Components/Loading/LoadingOverlay';
 import * as Mesa from 'wdk-client/Components/Mesa';
+import CommonModal from 'wdk-client/Components/Overlays/CommonModal';
 import Dialog from 'wdk-client/Components/Overlays/Dialog';
 import Modal from 'wdk-client/Components/Overlays/Modal';
 import Popup from 'wdk-client/Components/Overlays/Popup';
@@ -62,12 +63,18 @@ import Tabs from 'wdk-client/Components/Tabs/Tabs';
 import RealTimeSearchBox from 'wdk-client/Components/SearchBox/RealTimeSearchBox';
 import AttributeCell from 'wdk-client/Views/ResultTableSummaryView/AttributeCell';
 import ResultTable from 'wdk-client/Views/ResultTableSummaryView/ResultTable';
+import { ResizableContainer } from 'wdk-client/Components/Display/ResizableContainer';
+import ResultTabs from 'wdk-client/Core/MoveAfterRefactor/Components/Shared/ResultTabs';
+import { AddStepPanelView } from 'wdk-client/Views/Strategy/AddStepPanel';
+import StrategyWorkspaceController from 'wdk-client/Controllers/StrategyWorkspaceController';
+import ResultPanelHeader from 'wdk-client/Views/Strategy/ResultPanelHeader';
 import AnswerTableCell from 'wdk-client/Views/Answer/AnswerTableCell';
 
 export {
   AccordionButton,
   AnswerTableCell,
   ApplicationSpecificProperties,
+  AddStepPanelView,
   Banner,
   BannerList,
   CategoriesCheckboxTree,
@@ -76,6 +83,7 @@ export {
   CheckboxTree,
   CheckboxTreeNode,
   CollapsibleSection,
+  CommonModal,
   DataTable,
   DateRangeSelector,
   DateSelector,
@@ -117,6 +125,8 @@ export {
   RecordTableDescription,
   RecordTableSection,
   RecordUI,
+  ResizableContainer,
+  ResultTabs,
   ReporterSortMessage,
   SaveableTextEditor,
   ServerSideAttributeFilter,
@@ -130,4 +140,6 @@ export {
   Tooltip,
   AttributeCell,
   ResultTable,
+  ResultPanelHeader,
+  StrategyWorkspaceController
 };

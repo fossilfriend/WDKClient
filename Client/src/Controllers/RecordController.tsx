@@ -15,6 +15,7 @@ import {
   updateNavigationQuery,
   updateNavigationVisibility,
   updateSectionVisibility,
+  requestPartialRecord,
 } from 'wdk-client/Actions/RecordActions';
 
 import { CategoryTreeNode } from 'wdk-client/Utils/CategoryUtils';
@@ -30,7 +31,8 @@ const ActionCreators = {
   updateNavigationQuery,
   updateAllFieldVisibility,
   updateNavigationCategoryExpansion,
-  updateNavigationVisibility
+  updateNavigationVisibility,
+  requestPartialRecord
 };
 
 type StateProps = RootState['record'];
@@ -44,11 +46,21 @@ const CastRecordUI: any = RecordUI;
 /** View Controller for record page */
 class RecordController extends PageController<Props> {
 
+  requestPartialRecord = ({ attributes, tables}: { attributes?: string[], tables?: string[] }) => {
+    this.props.requestPartialRecord(
+      this.props.requestId,
+      this.props.recordClass.urlSegment,
+      this.props.record.id,
+      attributes,
+      tables
+    )
+  }
+
   /**
    * Declare what fields of the record are needed. All requests are made in
    * parallel, but the first requests is required to render the page.
    *
-   * By default, two elements are returned. The first includes all atrributes,
+   * By default, two elements are returned. The first includes all attributes,
    * and the second includes all tables. In some cases, more granular control
    * might be required, which this function hook provides.
    */
@@ -165,7 +177,11 @@ class RecordController extends PageController<Props> {
     }
 
     return (
-      <CastRecordUI {...this.props} headerActions={headerActions} />
+      <CastRecordUI
+        {...this.props}
+        requestPartialRecord={this.requestPartialRecord}
+        headerActions={headerActions}
+      />
     );
   }
 

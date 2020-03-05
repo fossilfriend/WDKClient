@@ -9,6 +9,7 @@ type Props = {
   onChange: (value: number) => void;
   step: number;
   size?: number;
+  required?: boolean;
 };
 
 type State = {
@@ -26,7 +27,8 @@ class NumberSelector extends React.Component<Props, State> {
     value: PropTypes.number,
     onChange: PropTypes.func,
     step: PropTypes.number,
-    size: PropTypes.number
+    size: PropTypes.number,
+    required: PropTypes.bool
   };
 
   debouncedNotifyChange = debounce(this.notifyChange, 750);
@@ -47,21 +49,23 @@ class NumberSelector extends React.Component<Props, State> {
   }
 
   handleBlurEvent (e: React.FocusEvent<HTMLInputElement>) {
-    let { start, end } = this.props;
-    let value = Number(e.currentTarget.value);
-    if (value < start) value = start;
-    if (value > end) value = end;
+    const value = e.currentTarget.value === '' ? this.props.value : e.currentTarget.value;
     this.setState({ internalValue: value }, () => this.notifyChange());
+  }
+
+  handleFocusEvent(e: React.FocusEvent<HTMLInputElement>) {
+    e.currentTarget.select();
   }
 
   notifyChange() {
     const { onChange } = this.props;
-    if (onChange == null) return;
-    onChange(Number(this.state.internalValue));
+    const { internalValue } = this.state;
+    if (onChange == null || internalValue === '') return;
+    onChange(Number(internalValue));
   }
 
   render () {
-    let { start, end, step, size } = this.props;
+    let { start, end, step, size, required = false } = this.props;
     let { internalValue: value } = this.state;
     if (!step) step = 1;
     if (!size) size = end + step;
@@ -78,6 +82,8 @@ class NumberSelector extends React.Component<Props, State> {
           value={value}
           onChange={this.handleChangeEvent}
           onBlur={this.handleBlurEvent}
+          onFocus={this.handleFocusEvent}
+          required={required}
         />
       </span>
     );
