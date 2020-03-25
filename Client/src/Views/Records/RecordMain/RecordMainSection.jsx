@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types';
 import { flowRight } from 'lodash';
+import React from 'react';
 import RecordMainCategorySection from 'wdk-client/Views/Records/RecordMain/RecordMainCategorySection';
 import { pure, wrappable } from 'wdk-client/Utils/ComponentUtils';
 import { getId, getLabel } from 'wdk-client/Utils/CategoryUtils';
@@ -14,7 +15,8 @@ const RecordMainSection = ({
   categories,
   collapsedSections,
   parentEnumeration,
-  onSectionToggle
+  onSectionToggle,
+  requestPartialRecord
 }) => (categories == null ? null : (
   <div>
     {categories.map((category, index) => {
@@ -34,6 +36,7 @@ const RecordMainSection = ({
           onSectionToggle={onSectionToggle}
           record={record}
           recordClass={recordClass}
+          requestPartialRecord={requestPartialRecord}
         >
           <RecordMainSection$
             depth={depth + 1}
@@ -43,6 +46,7 @@ const RecordMainSection = ({
             collapsedSections={collapsedSections}
             parentEnumeration={enumeration}
             onSectionToggle={onSectionToggle}
+            requestPartialRecord={requestPartialRecord}
           />
         </RecordMainCategorySection>
       );

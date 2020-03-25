@@ -19,10 +19,11 @@ type Props<T, U> = {
   updateFormState: (state: T) => T;
   updateFormUiState: (uiState: U) => U;
   onSubmit: () => void;
+  includeSubmit: boolean;
 }
 
 function WdkServiceJsonReporterForm<T, U>(props: Props<T, U>) {
-  let { scope, question, recordClass, ontology, formState, formUiState, updateFormState, updateFormUiState, onSubmit } = props;
+  let { scope, question, recordClass, ontology, formState, formUiState, updateFormState, updateFormUiState, onSubmit, includeSubmit } = props;
   let getUpdateHandler = (fieldName: string) => getChangeHandler(fieldName, updateFormState, formState);
   let getUiUpdateHandler = (fieldName: string) => getChangeHandler(fieldName, updateFormUiState, formUiState);
   return (
@@ -32,7 +33,7 @@ function WdkServiceJsonReporterForm<T, U>(props: Props<T, U>) {
         title="Choose Columns:"
         leafType="columns"
         searchBoxPlaceholder="Search Columns..."
-        tree={getAttributeTree(ontology, recordClass.name, question)}
+        tree={getAttributeTree(ontology, recordClass.fullName, question)}
 
         selectedLeaves={formState.attributes}
         expandedBranches={formUiState.expandedAttributeNodes}
@@ -47,7 +48,7 @@ function WdkServiceJsonReporterForm<T, U>(props: Props<T, U>) {
         title="Choose Tables:"
         leafType="columns"
         searchBoxPlaceholder="Search Tables..."
-        tree={getTableTree(ontology, recordClass.name)}
+        tree={getTableTree(ontology, recordClass.fullName)}
 
         selectedLeaves={formState.tables}
         expandedBranches={formUiState.expandedTableNodes}
@@ -58,9 +59,11 @@ function WdkServiceJsonReporterForm<T, U>(props: Props<T, U>) {
         onSearchTermChange={getUiUpdateHandler('tableSearchText')}
       />
 
-      <div style={{width:'30em',textAlign:'center', margin:'0.6em 0'}}>
-        <button className="btn" type="submit" onClick={onSubmit}>Get {recordClass.displayNamePlural}</button>
-      </div>
+      { includeSubmit &&
+        <div style={{width:'30em',textAlign:'center', margin:'0.6em 0'}}>
+          <button className="btn" type="submit" onClick={onSubmit}>Get {recordClass.displayNamePlural}</button>
+        </div>
+      }
     </div>
   );
 }
@@ -80,9 +83,9 @@ namespace WdkServiceJsonReporterForm {
     else {
       attribs = (scope === 'results' ?
         addPk(getAttributeSelections(preferences, question), recordClass) :
-        addPk(getAllLeafIds(getAttributeTree(ontology, recordClass.name, question)), recordClass));
+        addPk(getAllLeafIds(getAttributeTree(ontology, recordClass.fullName, question)), recordClass));
       tables = (scope === 'results' ? [] :
-        getAllLeafIds(getTableTree(ontology, recordClass.name)));
+        getAllLeafIds(getTableTree(ontology, recordClass.fullName)));
     }
     return {
       formState: {

@@ -2,6 +2,8 @@
  * Created by steve on 3/28/2016.
  */
 
+import { escapeRegExp, deburr } from 'lodash';
+
 /**
 * Filter a provided list of (generic) items.
 * Uses a "multi-term" search approach.  The search expression is parsed into query terms
@@ -14,11 +16,11 @@
 * @return {Array<Object>} an Array of items that pass the filter
 */
 export function filterItems<T>(items: Array<T>, itemToSearchableString: (item: T) => string, searchQueryString: string) {
-    if (!searchQueryString || !items) return items;
+  if (!searchQueryString || !items) return items;
 
-    let terms = parseSearchQueryString(searchQueryString);
-    let predicate = function (item: T) { return areTermsInString(terms, itemToSearchableString(item))};
-    return items.filter(predicate);
+  let terms = parseSearchQueryString(searchQueryString);
+  let predicate = function (item: T) { return areTermsInString(terms, itemToSearchableString(item)) };
+  return items.filter(predicate);
 }
 
 /**
@@ -27,12 +29,12 @@ export function filterItems<T>(items: Array<T>, itemToSearchableString: (item: T
  * @returns {Array<String>} A set of query terms parsed from searchQueryString
  */
 export function parseSearchQueryString(searchQueryString: string) {
-    let match = searchQueryString.match(/\w+|"[^"]*"/g);
-    if (match == null) return [];
-    return match.map(function(queryTerm) {
-        // remove wrapping quotes from phrases
-        return queryTerm.replace(/(^")|("$)/g, '');
-    });
+  let match = searchQueryString.match(/\S+|"[^"]*"/g);
+  if (match == null) return [];
+  return match.map(function (queryTerm) {
+    // remove wrapping quotes from phrases
+    return queryTerm.replace(/(^")|("$)/g, '');
+  });
 }
 
 /**
@@ -52,7 +54,8 @@ export function areTermsInString(queryTerms: Array<string>, searchableString: st
  * @returns {boolean} true if a match
  */
 export function isTermInString(queryTerm: string, searchableString: string = '') {
-    return !queryTerm || (searchableString.toLowerCase().includes(queryTerm.toLowerCase()));
+  if (!queryTerm) return true;
+
+  const re = new RegExp("\\b" + escapeRegExp(deburr(queryTerm)), "i");
+  return re.test(deburr(searchableString));
 }
-
-

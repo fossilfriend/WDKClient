@@ -1,5 +1,5 @@
 import { negate } from 'lodash';
-import React, { ComponentClass, StatelessComponent } from 'react';
+import React, { FunctionComponent } from 'react';
 import { wrappable } from 'wdk-client/Utils/ComponentUtils';
 import {
   getNodeId,
@@ -9,7 +9,7 @@ import {
   BasicNodeComponent,
   CategoryTreeNode
 } from 'wdk-client/Utils/CategoryUtils';
-import CheckboxTree from 'wdk-client/Components/CheckboxTree/CheckboxTree';
+import CheckboxTree, { LinksPosition } from 'wdk-client/Components/CheckboxTree/CheckboxTree';
 
 type ChangeHandler = (ids: string[]) => void;
 
@@ -38,9 +38,12 @@ type Props = {
   renderNoResults?: (searchTerm: string, tree: CategoryTreeNode) => React.ReactNode;
   isSelectable?: boolean;
   disableHelp?: boolean;
+  linksPosition?: LinksPosition;
+  showSearchBox?: boolean;
+  containerClassName?: string;
 };
 
-let CategoriesCheckboxTree: StatelessComponent<Props> = props => {
+let CategoriesCheckboxTree: FunctionComponent<Props> = props => {
 
 let {
   autoFocusSearchBox,
@@ -63,6 +66,9 @@ let {
   defaultSelection,
   title,
   tree,
+  linksPosition,
+  showSearchBox,
+  containerClassName = ''
 } = props;
 
   if (tree.children.length == 0) {
@@ -74,7 +80,7 @@ let {
     `Each ${leafType} name will be searched. The ${leafType} names will contain all your terms. Your terms are partially matched; for example, the term typ will match typically, type, atypical.`;
 
   return (
-    <div className="wdk-CategoriesCheckboxTree">
+    <div className={`wdk-CategoriesCheckboxTree ${containerClassName}`}>
       {title && <h3 className="wdk-CategoriesCheckboxTreeHeading">{title}</h3>}
       <div className="wdk-CategoriesCheckboxTreeWrapper">
         <CheckboxTree<CategoryTreeNode>
@@ -85,7 +91,8 @@ let {
           name={name}
           renderNoResults={renderNoResults}
           searchIconName="filter"
-          linkPlacement={CheckboxTree.LinkPlacement.Top}
+          linksPosition={linksPosition}
+          showSearchBox={showSearchBox}
           getNodeId={getNodeId}
           getNodeChildren={visibilityFilter ? getFilteredNodeChildren(visibilityFilter) : getNodeChildren}
           searchPredicate={visibilityFilter ? nodeSearchPredicateWithHiddenNodes(visibilityFilter) : nodeSearchPredicate}

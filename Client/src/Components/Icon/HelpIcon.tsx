@@ -1,22 +1,28 @@
 import React from 'react';
 
 import Icon from 'wdk-client/Components/Icon/IconAlt';
-import Tooltip from 'wdk-client/Components/Overlays/Tooltip';
+import Tooltip, { TooltipPosition } from 'wdk-client/Components/Overlays/Tooltip';
+
+import 'wdk-client/Components/Icon/HelpIcon.scss';
 
 type Props = {
   children: string | React.ReactElement<any>;
-  tooltipPosition?: {
-    my?: string;
-    at?: string;
-  };
-}
+  tooltipPosition?: TooltipPosition;
+  tooltipShowEvent?: string;
+  tooltipHideEvent?: string;
+};
 
 export default function HelpIcon (props: Props) {
   return (
-    <Tooltip content={props.children} position={props.tooltipPosition}>
-      <div className="HelpTrigger">
+    <Tooltip 
+      content={props.children} 
+      position={props.tooltipPosition} 
+      showEvent={props.tooltipShowEvent}
+      hideEvent={props.tooltipHideEvent}
+    >
+      <button type="button" className="link HelpTrigger">
         <Icon fa="question-circle"/>
-      </div>
+      </button>
     </Tooltip>
   )
 };

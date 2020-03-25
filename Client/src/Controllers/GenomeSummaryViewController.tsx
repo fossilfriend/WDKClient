@@ -22,14 +22,13 @@ import { createSelector } from 'reselect';
 import { GenomeSummaryViewReportModel, toReportModel } from 'wdk-client/Utils/GenomeSummaryViewUtils';
 import { identity } from 'rxjs';
 import { Partial1 } from 'wdk-client/Utils/ActionCreatorUtils';
+import {ResultType} from 'wdk-client/Utils/WdkResult';
 
 type StateProps = { status: 'loading' } | {
   status: 'complete'
   genomeSummaryData?: GenomeSummaryViewReportModel;
   displayName: string;
   displayNamePlural: string;
-  webAppUrl: string;
-  siteName: string;
   recordType: string;
   regionDialogVisibilities: Record<string, boolean>;
   emptyChromosomeFilterApplied: boolean;
@@ -43,7 +42,7 @@ type DispatchProps = {
   unapplyEmptyChromosomesFilter: Partial1<typeof unapplyEmptyChromosomesFilter>;
 };
 
-type OwnProps = { viewId: string, stepId: number };
+type OwnProps = { viewId: string, resultType: ResultType };
 
 type Props = {
   state: StateProps,
@@ -58,8 +57,8 @@ class GenomeSummaryViewController extends ViewController< Props > {
   }
 
   loadData (prevProps?: Props) {
-    if (prevProps == null || prevProps.ownProps.stepId !== this.props.ownProps.stepId) {
-      this.props.actionCreators.requestGenomeSummaryReport(this.props.ownProps.stepId);
+    if (prevProps == null || prevProps.ownProps.resultType !== this.props.ownProps.resultType) {
+      this.props.actionCreators.requestGenomeSummaryReport(this.props.ownProps.resultType);
     }
   }
 
@@ -81,8 +80,6 @@ class GenomeSummaryViewController extends ViewController< Props > {
         displayNamePlural={this.props.state.displayNamePlural}
         regionDialogVisibilities={this.props.state.regionDialogVisibilities}
         emptyChromosomeFilterApplied={this.props.state.emptyChromosomeFilterApplied}
-        webAppUrl={this.props.state.webAppUrl}
-        siteName={this.props.state.siteName}
         recordType={this.props.state.recordType}
         showRegionDialog={this.props.actionCreators.showRegionDialog}
         hideRegionDialog={this.props.actionCreators.hideRegionDialog}
@@ -117,8 +114,6 @@ function mapStateToProps(state: RootState, props: OwnProps): StateProps {
     displayName: get(genomeSummaryViewState, 'recordClass.displayName', ''),
     displayNamePlural: get(genomeSummaryViewState, 'recordClass.displayNamePlural', ''),
     recordType: urlSegmentToRecordType(get(genomeSummaryViewState, 'recordClass.urlSegment', '')),
-    siteName: toLower(get(globalDataState, 'siteConfig.projectId', '')),
-    webAppUrl: get(globalDataState, 'siteConfig.webAppUrl', ''),
     regionDialogVisibilities: genomeSummaryViewState.regionDialogVisibilities,
     emptyChromosomeFilterApplied: genomeSummaryViewState.emptyChromosomeFilterApplied
   };
